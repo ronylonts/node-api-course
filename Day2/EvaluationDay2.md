@@ -75,6 +75,35 @@ model Emprunt {
 
 ---
 
+### Démarrage du projet
+
+```bash
+cd evaluations/day2
+npm init -y
+npm install express dotenv @prisma/client bcryptjs jsonwebtoken zod
+npm install --save-dev prisma nodemon
+
+# Initialiser Prisma
+npx prisma init --datasource-provider sqlite
+
+# Après avoir écrit le schema.prisma :
+npx prisma migrate dev --name init
+npx prisma generate
+
+# Démarrer
+npm run dev
+```
+
+### Rendu
+
+```bash
+git add evaluations/day2/
+git commit -m "Jour 2 : API bibliothèque - Auth JWT + Prisma + Emprunts"
+git push origin main
+```
+
+---
+
 ### Critères d'évaluation détaillés
 
 > **Note totale : /20**
@@ -155,34 +184,6 @@ SCORE_SECTION_5: /3
 ```
 
 ---
-
-### Démarrage du projet
-
-```bash
-cd evaluations/day2
-npm init -y
-npm install express dotenv @prisma/client bcryptjs jsonwebtoken zod
-npm install --save-dev prisma nodemon
-
-# Initialiser Prisma
-npx prisma init --datasource-provider sqlite
-
-# Après avoir écrit le schema.prisma :
-npx prisma migrate dev --name init
-npx prisma generate
-
-# Démarrer
-npm run dev
-```
-
-### Rendu
-
-```bash
-git add evaluations/day2/
-git commit -m "Jour 2 : API bibliothèque - Auth JWT + Prisma + Emprunts"
-git push origin main
-```
-
 > ⚠️ **Ne pas commiter** : `node_modules/`, `.env`, `prisma/dev.db`
 > **Commiter** : `prisma/schema.prisma`, `prisma/migrations/`, `.env.example`
 
