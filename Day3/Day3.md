@@ -42,13 +42,13 @@ Ces deux concepts sont souvent confondus :
 > ⚠️ **Règle absolue :** Ne jamais stocker un mot de passe en clair.
 
 ```bash
-npm install bcrypt
+npm install bcryptjs
 ```
 
 #### Hacher un mot de passe
 
 ```javascript
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const SALT_ROUNDS = 12; // Plus élevé = plus sûr mais plus lent (10-12 recommandé)
 
@@ -69,49 +69,52 @@ const ok = await verifyPassword('monMotDePasse123', hash); // true
 const fail = await verifyPassword('mauvaisMotDePasse', hash); // false
 ```
 
-#### Table `users` dans la base
+#### Modèle `User` dans Prisma
 
-```javascript
-// db/database.js — ajouter à l'initialisation
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    username     TEXT    NOT NULL UNIQUE,
-    email        TEXT    NOT NULL UNIQUE,
-    password     TEXT    NOT NULL,
-    role         TEXT    NOT NULL DEFAULT 'user',
-    created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
-  );
-`);
+Le modèle `User` est déjà défini dans `prisma/schema.prisma` (mis en place au Jour 2) :
+
+```prisma
+model User {
+  id        Int       @id @default(autoincrement())
+  nom       String
+  email     String    @unique
+  password  String
+  role      String    @default("user")
+  createdAt DateTime  @default(now())
+  emprunts  Emprunt[]
+}
 ```
+
+> Aucune création de table manuelle — Prisma gère le schéma via les migrations.
 
 #### Controller d'inscription
 
 ```javascript
-// controllers/authController.js
-const bcrypt = require('bcrypt');
-const db = require('../db/database');
+// src/controllers/authController.js
+const bcrypt = require('bcryptjs');
+const prisma = require('../db/prisma');
+const { generateToken } = require('../utils/jwt');
 
 const register = async (req, res, next) => {
   try {
-    const { username, email, password } = req.body;
-    
+    const { nom, email, password } = req.body;
+
     // Vérifier si l'email existe déjà
-    const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return res.status(409).json({ error: 'Cet email est déjà utilisé' });
     }
-    
+
     const hashedPassword = await bcrypt.hash(password, 12);
-    
-    const result = db.prepare(
-      'INSERT INTO users (username, email, password) VALUES (?, ?, ?)'
-    ).run(username, email, hashedPassword);
-    
-    const user = db.prepare('SELECT id, username, email, role FROM users WHERE id = ?')
-      .get(result.lastInsertRowid);
-    
-    res.status(201).json({ message: 'Compte créé', user });
+
+    const user = await prisma.user.create({
+      data: { nom, email, password: hashedPassword },
+      select: { id: true, nom: true, email: true, role: true, createdAt: true },
+    });
+
+    const token = generateToken({ userId: user.id, email: user.email, role: user.role });
+
+    res.status(201).json({ user, token });
   } catch (err) {
     next(err);
   }
@@ -136,8 +139,8 @@ eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMiLCJyb2xlIjoidXNlciJ9.abc123
 **Payload typique :**
 ```json
 {
-  "sub": "42",
-  "username": "alice",
+  "userId": 42,
+  "email": "alice@example.com",
   "role": "admin",
   "iat": 1716300000,
   "exp": 1716386400
@@ -159,7 +162,7 @@ const SECRET = process.env.JWT_SECRET; // Depuis .env, long et aléatoire
 // Créer un token
 function generateToken(user) {
   return jwt.sign(
-    { sub: user.id, username: user.username, role: user.role },
+    { userId: user.id, email: user.email, role: user.role },
     SECRET,
     { expiresIn: '24h' } // '15m', '7d', '1h', etc.
   );
@@ -183,25 +186,25 @@ function verifyToken(token) {
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-    
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
     if (!user) {
       // Même message pour email inconnu et mauvais mot de passe
       // (sécurité : ne pas révéler si l'email existe)
       return res.status(401).json({ error: 'Identifiants invalides' });
     }
-    
+
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(401).json({ error: 'Identifiants invalides' });
     }
-    
-    const token = generateToken(user);
-    
-    res.json({ 
+
+    const token = generateToken({ userId: user.id, email: user.email, role: user.role });
+
+    res.json({
       token,
-      user: { id: user.id, username: user.username, role: user.role }
+      user: { id: user.id, nom: user.nom, email: user.email, role: user.role },
     });
   } catch (err) {
     next(err);
@@ -483,7 +486,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 NODE_ENV=production
 PORT=8080
 JWT_SECRET=<généré_avec_openssl_rand_base64_64>
-DB_PATH=/app/data/bibliotheque.db
+DATABASE_URL=file:/app/data/bibliotheque.db
 ALLOWED_ORIGINS=https://mon-frontend.com
 ```
 

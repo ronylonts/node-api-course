@@ -19,26 +19,30 @@ Dans votre fork, créez le dossier `evaluations/jour3/`. L'API doit fonctionner 
 ```
 evaluations/
 └── jour3/
+    ├── prisma/
+    │   ├── schema.prisma        ← modèles User, Livre, Emprunt (repris du Jour 2)
+    │   └── migrations/          ← générées par Prisma
+    ├── src/
+    │   ├── index.js
+    │   ├── app.js
+    │   ├── db/
+    │   │   └── prisma.js        ← instance PrismaClient
+    │   ├── routes/
+    │   │   ├── auth.js
+    │   │   └── livres.js
+    │   ├── controllers/
+    │   │   ├── authController.js
+    │   │   └── livresController.js
+    │   ├── middlewares/
+    │   │   ├── auth.js          ← authenticate + authorize
+    │   │   ├── logger.js
+    │   │   └── errorHandler.js
+    │   └── validators/
+    │       ├── authValidator.js
+    │       └── livreValidator.js
     ├── package.json
     ├── .env.example
-    ├── .gitignore
-    ├── index.js
-    ├── app.js
-    ├── routes/
-    │   ├── auth.js
-    │   └── livres.js
-    ├── controllers/
-    │   ├── authController.js
-    │   └── livresController.js
-    ├── middlewares/
-    │   ├── auth.js          ← authenticate + authorize
-    │   ├── logger.js
-    │   └── errorHandler.js
-    ├── validators/
-    │   ├── authValidator.js
-    │   └── livreValidator.js
-    └── db/
-        └── database.js
+    └── .gitignore
 ```
 
 #### Rôles et permissions
@@ -97,7 +101,7 @@ evaluations/
 | `helmet` est configuré dans `app.js` | 1 pt |
 | Un rate limiter est appliqué sur la route `POST /api/auth/login` | 1 pt |
 | `express.json()` est configuré avec une limite de taille (ex: `{ limit: '10kb' }`) | 1 pt |
-| Un fichier `.env.example` documente toutes les variables d'environnement nécessaires (`PORT`, `JWT_SECRET`, `DB_PATH`, etc.) | 1 pt |
+| Un fichier `.env.example` documente toutes les variables d'environnement nécessaires (`PORT`, `JWT_SECRET`, `DATABASE_URL`, etc.) | 1 pt |
 
 ---
 
@@ -123,7 +127,7 @@ evaluations/
 
 1. Pushez votre code sur votre fork GitHub
 2. Le code doit être dans `evaluations/jour3/`
-3. Vérifiez que `.env`, `node_modules` et `*.db` ne sont **pas** commités
+3. Vérifiez que `.env`, `node_modules`, `prisma/dev.db` et `prisma/migrations/dev.db` ne sont **pas** commités
 4. Envoyez le lien vers votre fork : `https://github.com/votre-pseudo/node-api-course`
 
 ---
@@ -132,9 +136,9 @@ evaluations/
 
 | Jour | Ce que vous avez construit |
 |---|---|
-| Jour 1 | API CRUD en mémoire, Express de base, codes HTTP |
-| Jour 2 | Architecture modulaire, validation Joi, persistance SQLite |
-| Jour 3 | Authentification JWT, rôles, sécurité, documentation |
+| Jour 1 | API CRUD sans framework, persistance JSON, modules Node.js |
+| Jour 2 | Architecture en couches, Prisma + SQLite, validation Zod, JWT, emprunts |
+| Jour 3 | Sécurité applicative (helmet, rate limiting), documentation Swagger, déploiement |
 
 **Félicitations ! Vous avez construit une API REST complète, sécurisée et prête pour la production. 🎉**
 
